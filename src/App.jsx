@@ -416,7 +416,7 @@ function MainContent() {
           <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-center sm:text-left text-sm text-gray-600 dark:text-gray-400">
-                &copy; {new Date().getFullYear()} Math Conquest • Créé par{' '}
+                &copy; {new Date().getFullYear()} Math Conquest • {t('createdBy')}{' '}
                 <a 
                   href="http://portfoliodek.netlify.app/" 
                   target="_blank" 
