@@ -14,12 +14,16 @@ function ImageUpload({ onImageUpload }) {
   const [preview, setPreview] = useState(null)
   const [showCropper, setShowCropper] = useState(false)
   const [imageToCrop, setImageToCrop] = useState(null)
+  const [isProcessing, setIsProcessing] = useState(false)
 
   /**
    * Gère la sélection de fichier
    */
   const handleFileSelect = (file) => {
+    if (isProcessing) return // Éviter les traitements multiples
+    
     if (file && file.type.startsWith('image/')) {
+      setIsProcessing(true)
       // Créer une preview et ouvrir le rogneur
       const reader = new FileReader()
       reader.onloadend = () => {
@@ -39,6 +43,11 @@ function ImageUpload({ onImageUpload }) {
     setShowCropper(false)
     setImageToCrop(null)
     setPreview(null)
+    setIsProcessing(false)
+    // Réinitialiser les inputs pour éviter que la caméra se rouvre
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
+    // Uploader l'image rognée
     onImageUpload(croppedFile)
   }
 
@@ -49,6 +58,7 @@ function ImageUpload({ onImageUpload }) {
     setShowCropper(false)
     setImageToCrop(null)
     setPreview(null)
+    setIsProcessing(false)
     // Réinitialiser les inputs
     if (fileInputRef.current) fileInputRef.current.value = ''
     if (cameraInputRef.current) cameraInputRef.current.value = ''
@@ -121,8 +131,14 @@ function ImageUpload({ onImageUpload }) {
           accept="image/*"
           className="hidden"
           onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
+            if (e.target.files && e.target.files[0] && !isProcessing) {
               handleFileSelect(e.target.files[0])
+              // Réinitialiser immédiatement pour éviter les doubles déclenchements
+              setTimeout(() => {
+                if (fileInputRef.current) {
+                  fileInputRef.current.value = ''
+                }
+              }, 100)
             }
           }}
         />
@@ -133,8 +149,14 @@ function ImageUpload({ onImageUpload }) {
           capture="environment"
           className="hidden"
           onChange={(e) => {
-            if (e.target.files && e.target.files[0]) {
+            if (e.target.files && e.target.files[0] && !isProcessing) {
               handleFileSelect(e.target.files[0])
+              // Réinitialiser immédiatement pour éviter les doubles déclenchements
+              setTimeout(() => {
+                if (cameraInputRef.current) {
+                  cameraInputRef.current.value = ''
+                }
+              }, 100)
             }
           }}
         />

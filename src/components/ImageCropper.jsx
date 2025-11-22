@@ -223,57 +223,104 @@ function ImageCropper({ imageSrc, onCrop, onCancel }) {
                     height: `${cropArea.height}px`
                   }}
                 >
-                  {/* Poignée de redimensionnement */}
-                  <div
-                    className="absolute bottom-0 right-0 w-6 h-6 bg-blue-500 rounded-tl-lg cursor-se-resize touch-none"
-                    onMouseDown={(e) => {
-                      e.stopPropagation()
-                      const handleResizeMove = (moveEvent) => {
-                        const rect = containerRef.current.getBoundingClientRect()
-                        const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
-                        const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY
-                        const mouseX = clientX - rect.left
-                        const mouseY = clientY - rect.top
-                        setCropArea(prev => ({
-                          ...prev,
-                          width: Math.max(100, Math.min(mouseX - prev.x, rect.width - prev.x)),
-                          height: Math.max(100, Math.min(mouseY - prev.y, rect.height - prev.y))
-                        }))
+                  {/* Fonction helper pour créer une poignée de redimensionnement */}
+                  {(['nw', 'ne', 'sw', 'se']).map((corner) => {
+                    const getPosition = () => {
+                      switch(corner) {
+                        case 'nw': return { top: '-3px', left: '-3px', cursor: 'nw-resize', rounded: 'rounded-br-lg' }
+                        case 'ne': return { top: '-3px', right: '-3px', cursor: 'ne-resize', rounded: 'rounded-bl-lg' }
+                        case 'sw': return { bottom: '-3px', left: '-3px', cursor: 'sw-resize', rounded: 'rounded-tr-lg' }
+                        case 'se': return { bottom: '-3px', right: '-3px', cursor: 'se-resize', rounded: 'rounded-tl-lg' }
+                        default: return {}
                       }
+                    }
+                    const pos = getPosition()
+                    
+                    const handleResize = (e) => {
+                      e.stopPropagation()
+                      const rect = containerRef.current.getBoundingClientRect()
+                      const startX = e.touches ? e.touches[0].clientX : e.clientX
+                      const startY = e.touches ? e.touches[0].clientY : e.clientY
+                      const startCrop = { ...cropArea }
+                      
+                      const handleResizeMove = (moveEvent) => {
+                        moveEvent.preventDefault()
+                        const currentX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
+                        const currentY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY
+                        const mouseX = currentX - rect.left
+                        const mouseY = currentY - rect.top
+                        
+                        let newCrop = { ...startCrop }
+                        
+                        if (corner === 'nw') {
+                          // Coin nord-ouest : ajuster x, y, width, height
+                          newCrop.width = startCrop.x + startCrop.width - mouseX
+                          newCrop.height = startCrop.y + startCrop.height - mouseY
+                          newCrop.x = mouseX
+                          newCrop.y = mouseY
+                        } else if (corner === 'ne') {
+                          // Coin nord-est : ajuster y, width, height
+                          newCrop.width = mouseX - startCrop.x
+                          newCrop.height = startCrop.y + startCrop.height - mouseY
+                          newCrop.y = mouseY
+                        } else if (corner === 'sw') {
+                          // Coin sud-ouest : ajuster x, width, height
+                          newCrop.width = startCrop.x + startCrop.width - mouseX
+                          newCrop.height = mouseY - startCrop.y
+                          newCrop.x = mouseX
+                        } else if (corner === 'se') {
+                          // Coin sud-est : ajuster width, height
+                          newCrop.width = mouseX - startCrop.x
+                          newCrop.height = mouseY - startCrop.y
+                        }
+                        
+                        // Contraintes minimales
+                        const minSize = 100
+                        if (newCrop.width < minSize) {
+                          if (corner === 'nw' || corner === 'sw') {
+                            newCrop.x = startCrop.x + startCrop.width - minSize
+                          }
+                          newCrop.width = minSize
+                        }
+                        if (newCrop.height < minSize) {
+                          if (corner === 'nw' || corner === 'ne') {
+                            newCrop.y = startCrop.y + startCrop.height - minSize
+                          }
+                          newCrop.height = minSize
+                        }
+                        
+                        // S'assurer que la zone reste dans les limites
+                        newCrop.x = Math.max(0, Math.min(newCrop.x, rect.width - newCrop.width))
+                        newCrop.y = Math.max(0, Math.min(newCrop.y, rect.height - newCrop.height))
+                        newCrop.width = Math.max(minSize, Math.min(newCrop.width, rect.width - newCrop.x))
+                        newCrop.height = Math.max(minSize, Math.min(newCrop.height, rect.height - newCrop.y))
+                        
+                        setCropArea(newCrop)
+                      }
+                      
                       const handleResizeUp = () => {
                         document.removeEventListener('mousemove', handleResizeMove)
                         document.removeEventListener('mouseup', handleResizeUp)
                         document.removeEventListener('touchmove', handleResizeMove)
                         document.removeEventListener('touchend', handleResizeUp)
                       }
+                      
                       document.addEventListener('mousemove', handleResizeMove)
                       document.addEventListener('mouseup', handleResizeUp)
                       document.addEventListener('touchmove', handleResizeMove, { passive: false })
                       document.addEventListener('touchend', handleResizeUp)
-                    }}
-                    onTouchStart={(e) => {
-                      e.stopPropagation()
-                      const handleResizeMove = (moveEvent) => {
-                        moveEvent.preventDefault()
-                        const rect = containerRef.current.getBoundingClientRect()
-                        const clientX = moveEvent.touches ? moveEvent.touches[0].clientX : moveEvent.clientX
-                        const clientY = moveEvent.touches ? moveEvent.touches[0].clientY : moveEvent.clientY
-                        const mouseX = clientX - rect.left
-                        const mouseY = clientY - rect.top
-                        setCropArea(prev => ({
-                          ...prev,
-                          width: Math.max(100, Math.min(mouseX - prev.x, rect.width - prev.x)),
-                          height: Math.max(100, Math.min(mouseY - prev.y, rect.height - prev.y))
-                        }))
-                      }
-                      const handleResizeUp = () => {
-                        document.removeEventListener('touchmove', handleResizeMove)
-                        document.removeEventListener('touchend', handleResizeUp)
-                      }
-                      document.addEventListener('touchmove', handleResizeMove, { passive: false })
-                      document.addEventListener('touchend', handleResizeUp)
-                    }}
-                  />
+                    }
+                    
+                    return (
+                      <div
+                        key={corner}
+                        className={`absolute w-6 h-6 bg-blue-500 ${pos.rounded} ${pos.cursor} touch-none z-10`}
+                        style={pos}
+                        onMouseDown={handleResize}
+                        onTouchStart={handleResize}
+                      />
+                    )
+                  })}
                 </div>
               </>
             )}
