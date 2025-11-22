@@ -7,20 +7,29 @@ const ThemeContext = createContext()
  * Contexte pour gérer le thème (dark/light mode)
  * Sauvegarde la préférence dans localStorage
  */
-export function ThemeProvider({ children }) {
-  const [isDark, setIsDark] = useState(() => {
-    // Récupérer la préférence depuis localStorage ou utiliser la préférence système
-    const saved = localStorage.getItem('theme')
+const getInitialThemePreference = () => {
+  if (typeof window === 'undefined') return false
+
+  try {
+    const saved = window.localStorage.getItem('theme')
     if (saved === 'dark' || saved === 'light') {
       return saved === 'dark'
     }
-    // Détecter la préférence système par défaut
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    return prefersDark
-  })
+  } catch {
+    // ignore, fallback to light
+  }
+
+  // Par défaut on démarre en clair
+  return false
+}
+
+export function ThemeProvider({ children }) {
+  const [isDark, setIsDark] = useState(getInitialThemePreference)
 
   // Appliquer le thème au chargement initial et à chaque changement
   useEffect(() => {
+    if (typeof document === 'undefined') return
+
     const root = document.documentElement
     
     // Retirer toutes les classes dark d'abord
@@ -32,7 +41,11 @@ export function ThemeProvider({ children }) {
     }
     
     // Sauvegarder la préférence
-    localStorage.setItem('theme', isDark ? 'dark' : 'light')
+    try {
+      window.localStorage.setItem('theme', isDark ? 'dark' : 'light')
+    } catch {
+      // ignore storage errors
+    }
   }, [isDark])
 
   const toggleTheme = () => {

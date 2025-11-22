@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import LoadingSpinner from './LoadingSpinner'
 import { renderMarkdown } from '../utils/markdownRenderer.jsx'
 import { useLanguage } from '../contexts/LanguageContext'
+import { apiFetch } from '../utils/apiClient'
 
 function ChatInterface({ problem, solution }) {
   const { t, language } = useLanguage()
@@ -50,7 +51,7 @@ function ChatInterface({ problem, solution }) {
     setIsLoading(true)
 
     try {
-      const response = await fetch('/api/chat', {
+      const response = await apiFetch('/api/chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -9,6 +9,7 @@ import LandingPage from './components/LandingPage'
 import ProblemReview from './components/ProblemReview'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
+import { apiFetch } from './utils/apiClient'
 
 /**
  * Composant principal de l'application
@@ -67,7 +68,7 @@ function MainContent() {
       const formData = new FormData()
       formData.append('file', imageFile)
 
-      const response = await fetch('/api/extract-latex', {
+      const response = await apiFetch('/api/extract-latex', {
         method: 'POST',
         body: formData,
       })
@@ -113,7 +114,7 @@ function MainContent() {
     setCurrentStep('solving')
 
     try {
-      const response = await fetch('/api/solve', {
+      const response = await apiFetch('/api/solve', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
