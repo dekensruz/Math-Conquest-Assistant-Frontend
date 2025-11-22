@@ -15,23 +15,42 @@ function ImageUpload({ onImageUpload }) {
   const [showCropper, setShowCropper] = useState(false)
   const [imageToCrop, setImageToCrop] = useState(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const processingRef = useRef(false)
 
   /**
    * Gère la sélection de fichier
    */
-  const handleFileSelect = (file) => {
-    if (isProcessing) return // Éviter les traitements multiples
+  const handleFileSelect = (file, inputRef = null) => {
+    // Vérifier avec le ref pour éviter les doubles déclenchements
+    if (processingRef.current || isProcessing) {
+      return
+    }
     
     if (file && file.type.startsWith('image/')) {
+      // Marquer comme en traitement immédiatement
+      processingRef.current = true
       setIsProcessing(true)
+      
+      // Réinitialiser l'input immédiatement pour éviter les doubles déclenchements
+      if (inputRef && inputRef.current) {
+        inputRef.current.value = ''
+      }
+      
       // Créer une preview et ouvrir le rogneur
       const reader = new FileReader()
       reader.onloadend = () => {
         setImageToCrop(reader.result)
         setShowCropper(true)
       }
+      reader.onerror = () => {
+        processingRef.current = false
+        setIsProcessing(false)
+        alert(t('invalidImage') || 'Erreur lors de la lecture de l\'image')
+      }
       reader.readAsDataURL(file)
     } else {
+      processingRef.current = false
+      setIsProcessing(false)
       alert(t('invalidImage'))
     }
   }
@@ -43,6 +62,7 @@ function ImageUpload({ onImageUpload }) {
     setShowCropper(false)
     setImageToCrop(null)
     setPreview(null)
+    processingRef.current = false
     setIsProcessing(false)
     // Réinitialiser les inputs pour éviter que la caméra se rouvre
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -58,6 +78,7 @@ function ImageUpload({ onImageUpload }) {
     setShowCropper(false)
     setImageToCrop(null)
     setPreview(null)
+    processingRef.current = false
     setIsProcessing(false)
     // Réinitialiser les inputs
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -103,7 +124,7 @@ function ImageUpload({ onImageUpload }) {
     setDragActive(false)
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileSelect(e.dataTransfer.files[0])
+      handleFileSelect(e.dataTransfer.files[0], null)
     }
   }
 
@@ -131,14 +152,11 @@ function ImageUpload({ onImageUpload }) {
           accept="image/*"
           className="hidden"
           onChange={(e) => {
-            if (e.target.files && e.target.files[0] && !isProcessing) {
-              handleFileSelect(e.target.files[0])
-              // Réinitialiser immédiatement pour éviter les doubles déclenchements
-              setTimeout(() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = ''
-                }
-              }, 100)
+            const file = e.target.files?.[0]
+            if (file) {
+              // Réinitialiser immédiatement avant de traiter
+              e.target.value = ''
+              handleFileSelect(file, fileInputRef)
             }
           }}
         />
@@ -149,14 +167,11 @@ function ImageUpload({ onImageUpload }) {
           capture="environment"
           className="hidden"
           onChange={(e) => {
-            if (e.target.files && e.target.files[0] && !isProcessing) {
-              handleFileSelect(e.target.files[0])
-              // Réinitialiser immédiatement pour éviter les doubles déclenchements
-              setTimeout(() => {
-                if (cameraInputRef.current) {
-                  cameraInputRef.current.value = ''
-                }
-              }, 100)
+            const file = e.target.files?.[0]
+            if (file) {
+              // Réinitialiser immédiatement avant de traiter
+              e.target.value = ''
+              handleFileSelect(file, cameraInputRef)
             }
           }}
         />

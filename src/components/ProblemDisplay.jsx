@@ -151,38 +151,40 @@ function ProblemDisplay({ latex, onSolve, onReset }) {
   return (
     <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-xl p-6 sm:p-8 border-2 border-gray-200 dark:border-gray-700 transition-all animate-fade-in">
       <div className="flex flex-col gap-4 mb-6">
-        <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-          <span className="w-1.5 h-8 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full shadow-md"></span>
-          {t('problemDetected') || 'Éditeur de problème'}
-        </h2>
-        <div className="inline-flex items-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 rounded-full p-1.5 text-xs font-bold shadow-inner">
-          <button
-            onClick={() => handleModeChange('natural')}
-            className={`px-4 py-2 rounded-full transition-all ${editorMode === 'natural' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
-          >
-            ✏️ {t('naturalMode') || 'Naturel'}
-          </button>
-          <button
-            onClick={() => handleModeChange('latex')}
-            className={`px-4 py-2 rounded-full transition-all ${editorMode === 'latex' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
-          >
-            📐 {t('latexMode') || 'LaTeX'}
-          </button>
-        </div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-white flex items-center gap-2 sm:gap-3">
+            <span className="w-1.5 h-6 sm:h-8 bg-gradient-to-b from-blue-600 to-indigo-600 rounded-full shadow-md"></span>
+            {t('problemDetected') || 'Éditeur de problème'}
+          </h2>
+          <div className="flex items-center gap-2 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-900 dark:to-gray-800 rounded-full p-1.5 text-xs font-bold shadow-inner w-full sm:w-auto">
+            <button
+              onClick={() => handleModeChange('natural')}
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-full transition-all text-center ${editorMode === 'natural' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
+            >
+              <span className="hidden sm:inline">✏️ </span>
+              {t('naturalMode') || 'Naturel'}
+            </button>
+            <button
+              onClick={() => handleModeChange('latex')}
+              className={`flex-1 sm:flex-none px-3 sm:px-4 py-2 rounded-full transition-all text-center ${editorMode === 'latex' ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg' : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'}`}
+            >
+              <span className="hidden sm:inline">📐 </span>
+              {t('latexMode') || 'LaTeX'}
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Zone de prévisualisation (Rendu Math) */}
-      <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900/80 dark:to-blue-900/10 rounded-2xl p-8 mb-6 border-2 border-slate-200 dark:border-gray-700 flex items-center justify-center min-h-[140px] shadow-lg relative overflow-hidden">
-        <div className="absolute top-2 right-2 px-3 py-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-600 dark:text-gray-400 shadow-sm">
+      <div className="bg-gradient-to-br from-slate-50 to-blue-50 dark:from-gray-900/80 dark:to-blue-900/10 rounded-2xl p-4 sm:p-8 mb-6 border-2 border-slate-200 dark:border-gray-700 flex items-center justify-center min-h-[120px] sm:min-h-[140px] shadow-lg relative overflow-hidden">
+        <div className="absolute top-2 right-2 px-2 sm:px-3 py-1 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-full text-xs font-semibold text-gray-600 dark:text-gray-400 shadow-sm">
           Aperçu
         </div>
-        <div className="text-center text-xl sm:text-2xl overflow-x-auto max-w-full text-slate-900 dark:text-slate-100">
+        <div className="text-center text-lg sm:text-xl md:text-2xl overflow-x-auto max-w-full text-slate-900 dark:text-slate-100 w-full">
           {editableLatex ? (
              <BlockMath math={fixLatexInText(editableLatex)} />
           ) : (
-             <span className="text-gray-400 italic text-base">✨ {t('problemPreviewPlaceholder') || 'Votre formule apparaîtra ici'}</span>
+             <span className="text-gray-400 italic text-sm sm:text-base"> {t('problemPreviewPlaceholder') || 'Votre formule apparaîtra ici'}</span>
           )}
         </div>
       </div>
@@ -252,7 +254,7 @@ function ProblemDisplay({ latex, onSolve, onReset }) {
               ref={naturalTextareaRef}
               value={simpleInput}
               onChange={(e) => updateNaturalInput(e.target.value)}
-              className="w-full px-4 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium text-base focus:outline-none focus:bg-blue-50/10 dark:focus:bg-blue-900/10 resize-y min-h-[120px]"
+              className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-medium text-sm sm:text-base focus:outline-none focus:bg-blue-50/10 dark:focus:bg-blue-900/10 resize-y min-h-[120px] sm:min-h-[140px]"
               placeholder={t('naturalPlaceholder')}
             />
             <div className="absolute bottom-2 right-3 text-[10px] text-gray-400 dark:text-gray-500 pointer-events-none">
@@ -265,7 +267,7 @@ function ProblemDisplay({ latex, onSolve, onReset }) {
               ref={latexTextareaRef}
               value={editableLatex}
               onChange={(e) => setEditableLatex(e.target.value)}
-              className="w-full px-4 py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-sm focus:outline-none focus:bg-blue-50/10 dark:focus:bg-blue-900/10 resize-y min-h-[100px]"
+              className="w-full px-3 sm:px-4 py-3 sm:py-4 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-mono text-xs sm:text-sm focus:outline-none focus:bg-blue-50/10 dark:focus:bg-blue-900/10 resize-y min-h-[100px] sm:min-h-[120px]"
               placeholder={t('problemPlaceholder')}
               spellCheck="false"
             />

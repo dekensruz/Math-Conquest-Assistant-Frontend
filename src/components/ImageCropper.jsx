@@ -115,7 +115,7 @@ function ImageCropper({ imageSrc, onCrop, onCancel }) {
     if (!imageRef.current || !canvasRef.current) return
 
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const ctx = canvas.getContext('2d', { willReadFrequently: false })
     const img = imageRef.current
     
     // Calculer le ratio de l'image réelle vs affichée
@@ -125,30 +125,40 @@ function ImageCropper({ imageSrc, onCrop, onCancel }) {
     const displayWidth = img.naturalWidth * scale
     const displayHeight = img.naturalHeight * scale
     
-    // Convertir les coordonnées de rognage en coordonnées réelles
-    const cropX = (cropArea.x / displayWidth) * img.naturalWidth
-    const cropY = (cropArea.y / displayHeight) * img.naturalHeight
-    const cropWidth = (cropArea.width / displayWidth) * img.naturalWidth
-    const cropHeight = (cropArea.height / displayHeight) * img.naturalHeight
+    // Convertir les coordonnées de rognage en coordonnées réelles (utiliser les dimensions naturelles)
+    const cropX = Math.round((cropArea.x / displayWidth) * img.naturalWidth)
+    const cropY = Math.round((cropArea.y / displayHeight) * img.naturalHeight)
+    const cropWidth = Math.round((cropArea.width / displayWidth) * img.naturalWidth)
+    const cropHeight = Math.round((cropArea.height / displayHeight) * img.naturalHeight)
     
-    // Configurer le canvas
+    // S'assurer que les dimensions sont valides
+    if (cropWidth <= 0 || cropHeight <= 0 || cropX < 0 || cropY < 0) {
+      console.error('Invalid crop dimensions')
+      return
+    }
+    
+    // Configurer le canvas avec les dimensions réelles (pas de downscaling)
     canvas.width = cropWidth
     canvas.height = cropHeight
     
-    // Dessiner l'image rognée
+    // Améliorer la qualité du rendu
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    
+    // Dessiner l'image rognée directement depuis les dimensions naturelles
     ctx.drawImage(
       img,
       cropX, cropY, cropWidth, cropHeight,
       0, 0, cropWidth, cropHeight
     )
     
-    // Convertir en blob
+    // Convertir en blob avec qualité maximale
     canvas.toBlob((blob) => {
       if (blob) {
         const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' })
         onCrop(file)
       }
-    }, 'image/jpeg', 0.95)
+    }, 'image/jpeg', 1.0) // Qualité maximale (1.0 au lieu de 0.95)
   }
 
   return (
