@@ -177,7 +177,7 @@ function ChatInterface({ problem, solution, isModal = false }) {
         {/* Historique des messages */}
         <div
           ref={messagesContainerRef}
-          className={`flex-1 overflow-y-auto p-4 space-y-4 ${isModal ? 'min-h-0 bg-transparent' : 'min-h-[120px] max-h-[280px] sm:max-h-[350px]'}`}
+          className={`flex-1 overflow-y-auto ${isModal ? 'p-2 sm:p-4 min-h-0 bg-transparent' : 'p-4 min-h-[120px] max-h-[280px] sm:max-h-[350px]'} space-y-3 sm:space-y-4`}
         >
           {messages.length === 0 && (
             <div className="text-center text-gray-500 dark:text-gray-400 py-4 sm:py-8">
@@ -225,7 +225,7 @@ function ChatInterface({ problem, solution, isModal = false }) {
         </div>
 
         {/* Zone de saisie */}
-        <form onSubmit={handleSendMessage} className={`border-t border-gray-200 dark:border-gray-700 ${isModal ? 'p-3' : 'p-3 sm:p-4'}`}>
+        <form onSubmit={handleSendMessage} className={`border-t border-gray-200 dark:border-gray-700 ${isModal ? 'p-2 sm:p-3' : 'p-3 sm:p-4'} shrink-0`}>
           <div className="flex gap-2">
             <input
               ref={inputRef}
@@ -233,13 +233,13 @@ function ChatInterface({ problem, solution, isModal = false }) {
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               placeholder={t('chatPlaceholder')}
-              className={`flex-1 px-3 py-2 ${isModal ? 'text-sm' : 'sm:px-4 sm:py-2'} border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
+              className={`flex-1 min-w-0 px-2 sm:px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500`}
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={!inputValue.trim() || isLoading}
-              className={`px-3 py-2 ${isModal ? '' : 'sm:px-4 sm:py-2'} bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-sm`}
+              className={`px-3 sm:px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg font-medium hover:from-purple-700 hover:to-indigo-700 transition-colors disabled:bg-gray-300 dark:disabled:bg-gray-600 disabled:cursor-not-allowed text-xs sm:text-sm whitespace-nowrap shrink-0`}
             >
               {t('send')}
             </button>
