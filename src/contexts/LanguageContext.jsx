@@ -65,8 +65,13 @@ const translations = {
     
     // Chat
     chatTitle: "Discussion",
+    chatSubtitle: "Posez des questions sur cette solution",
+    chatDescription: "Posez des questions pour mieux comprendre cette solution",
     chatPlaceholder: "Posez une question sur la solution...",
     chatSuggested: "Questions suggérées",
+    chatTip: "Astuce : Appuyez sur Échap pour fermer",
+    needHelp: "Besoin d'aide ?",
+    openChat: "Ouvrir le chat",
     whyStep: "Pourquoi cette étape ?",
     example: "Exemple similaire",
     explainConcept: "Expliquer le concept",
@@ -194,8 +199,13 @@ const translations = {
     
     // Chat
     chatTitle: "Discussion",
+    chatSubtitle: "Ask questions about this solution",
+    chatDescription: "Ask questions to better understand this solution",
     chatPlaceholder: "Ask a question about the solution...",
     chatSuggested: "Suggested Questions",
+    chatTip: "Tip: Press Esc to close",
+    needHelp: "Need help?",
+    openChat: "Open Chat",
     whyStep: "Why this step?",
     example: "Similar example",
     explainConcept: "Explain concept",

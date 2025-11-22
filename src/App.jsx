@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import ImageUpload from './components/ImageUpload'
 import ProblemDisplay from './components/ProblemDisplay'
 import SolutionDisplay from './components/SolutionDisplay'
@@ -7,6 +7,7 @@ import LoadingSpinner from './components/LoadingSpinner'
 import ThemeToggle from './components/ThemeToggle'
 import LandingPage from './components/LandingPage'
 import ProblemReview from './components/ProblemReview'
+import ChatWidget from './components/ChatWidget'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { apiFetch } from './utils/apiClient'
@@ -17,13 +18,14 @@ import { apiFetch } from './utils/apiClient'
  */
 function MainContent() {
   const [isStarted, setIsStarted] = useState(false)
-  const [currentStep, setCurrentStep] = useState('upload') // upload, extracting, confirm, latex, solving, solution, history
+  const [currentStep, setCurrentStep] = useState('upload') // upload, extracting, confirm, latex, solving, solution
   const [latexProblem, setLatexProblem] = useState('')
   const [solution, setSolution] = useState(null)
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(false)
   const [inputMode, setInputMode] = useState('upload') // upload | manual
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false)
+  const chatWidgetRef = useRef(null)
   const { t, language, setLanguage } = useLanguage()
 
   /**
@@ -183,6 +185,12 @@ function MainContent() {
     setIsStarted(false)
     setCurrentStep('upload')
     setError(null)
+  }
+
+  const handleOpenChat = () => {
+    if (chatWidgetRef.current) {
+      chatWidgetRef.current.openChat()
+    }
   }
 
   return (
@@ -394,7 +402,8 @@ function MainContent() {
                   <SolutionDisplay 
                     problem={latexProblem} 
                     solution={solution} 
-                    onReset={handleBackToMain} 
+                    onReset={handleBackToMain}
+                    onOpenChat={handleOpenChat}
                   />
                 )}
               </div>
@@ -420,6 +429,15 @@ function MainContent() {
         </footer>
         </div>
       </div>
+
+      {/* Widget de chat flottant - visible uniquement sur la page de solution */}
+      {currentStep === 'solution' && solution && (
+        <ChatWidget 
+          ref={chatWidgetRef}
+          problem={latexProblem}
+          solution={solution}
+        />
+      )}
     </div>
   )
 }

@@ -2,7 +2,6 @@ import { BlockMath } from 'react-katex'
 import 'katex/dist/katex.min.css'
 import { useEffect, useRef } from 'react'
 import jsPDF from 'jspdf'
-import ChatInterface from './ChatInterface'
 import { addToHistory } from '../utils/historyStorage'
 import StepDescription from './StepDescription'
 import { fixLatexInText, latexToPlainText } from '../utils/latexHelper'
@@ -12,7 +11,7 @@ import { useLanguage } from '../contexts/LanguageContext'
  * Composant pour afficher la solution complète avec explications étape par étape
  * Inclut l'export PDF
  */
-function SolutionDisplay({ problem, solution, onReset }) {
+function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
   const { t } = useLanguage()
   const contentRef = useRef(null)
 
@@ -294,10 +293,39 @@ function SolutionDisplay({ problem, solution, onReset }) {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Chat interactif pour questions de suivi */}
-      <ChatInterface problem={problem} solution={solution} />
+        {/* Section pour ouvrir le chat après le résumé */}
+        {explanation.summary && onOpenChat && (
+          <div className="mt-8 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/10 rounded-2xl p-6 border border-purple-100 dark:border-purple-800/30">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg flex-shrink-0">
+                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {t('needHelp') || 'Besoin d\'aide ?'}
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {t('chatDescription') || 'Posez des questions pour mieux comprendre cette solution'}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onOpenChat}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all shadow-lg shadow-purple-500/30 hover:shadow-xl hover:shadow-purple-500/40 flex items-center gap-2 whitespace-nowrap"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+                {t('openChat') || 'Ouvrir le chat'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
