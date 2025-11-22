@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import ImageCropper from './ImageCropper'
 
 /**
  * Composant pour l'upload d'image (fichier ou caméra)
@@ -11,23 +12,46 @@ function ImageUpload({ onImageUpload }) {
   const cameraInputRef = useRef(null)
   const [dragActive, setDragActive] = useState(false)
   const [preview, setPreview] = useState(null)
+  const [showCropper, setShowCropper] = useState(false)
+  const [imageToCrop, setImageToCrop] = useState(null)
 
   /**
    * Gère la sélection de fichier
    */
   const handleFileSelect = (file) => {
     if (file && file.type.startsWith('image/')) {
-      // Créer une preview
+      // Créer une preview et ouvrir le rogneur
       const reader = new FileReader()
       reader.onloadend = () => {
-        setPreview(reader.result)
+        setImageToCrop(reader.result)
+        setShowCropper(true)
       }
       reader.readAsDataURL(file)
-      
-      onImageUpload(file)
     } else {
       alert(t('invalidImage'))
     }
+  }
+
+  /**
+   * Gère la confirmation du rognage
+   */
+  const handleCropConfirm = (croppedFile) => {
+    setShowCropper(false)
+    setImageToCrop(null)
+    setPreview(null)
+    onImageUpload(croppedFile)
+  }
+
+  /**
+   * Annule le rognage
+   */
+  const handleCropCancel = () => {
+    setShowCropper(false)
+    setImageToCrop(null)
+    setPreview(null)
+    // Réinitialiser les inputs
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    if (cameraInputRef.current) cameraInputRef.current.value = ''
   }
 
   /**
@@ -197,6 +221,15 @@ function ImageUpload({ onImageUpload }) {
           </div>
         )}
       </div>
+
+      {/* Modal de rognage */}
+      {showCropper && imageToCrop && (
+        <ImageCropper
+          imageSrc={imageToCrop}
+          onCrop={handleCropConfirm}
+          onCancel={handleCropCancel}
+        />
+      )}
     </div>
   )
 }

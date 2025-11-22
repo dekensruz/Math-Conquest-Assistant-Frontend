@@ -25,6 +25,8 @@ const translations = {
     chooseFile: "Choisir un fichier",
     takePhoto: "Prendre une photo",
     invalidImage: "Veuillez sélectionner une image valide",
+    cropImage: "Rogner l'image",
+    confirmCrop: "Confirmer",
     
     // Problem Display
     problemDetected: "Problème détecté",
@@ -33,6 +35,7 @@ const translations = {
     cancel: "Annuler",
     solveButton: "Résoudre",
     back: "Retour",
+    backToHome: "Retour à l'accueil",
     naturalMode: "Mode naturel",
     latexMode: "Mode avancé (LaTeX)",
     naturalPlaceholder: "Ex : (2x + 3)/5 = 7 ou √(16) = 4",
@@ -159,6 +162,8 @@ const translations = {
     chooseFile: "Choose a file",
     takePhoto: "Take a photo",
     invalidImage: "Please select a valid image",
+    cropImage: "Crop image",
+    confirmCrop: "Confirm",
     
     // Problem Display
     problemDetected: "Detected Problem",
@@ -167,6 +172,7 @@ const translations = {
     cancel: "Cancel",
     solveButton: "Solve",
     back: "Back",
+    backToHome: "Back to home",
     naturalMode: "Natural mode",
     latexMode: "Advanced (LaTeX)",
     naturalPlaceholder: "e.g. (2x + 3)/5 = 7 or √(16) = 4",
