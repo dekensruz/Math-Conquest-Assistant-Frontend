@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import ImageCropper from './ImageCropper'
 
@@ -17,41 +17,68 @@ function ImageUpload({ onImageUpload }) {
   const [isProcessing, setIsProcessing] = useState(false)
   const processingRef = useRef(false)
 
+  // Réinitialiser le ref au montage et au démontage
+  useEffect(() => {
+    processingRef.current = false
+    return () => {
+      processingRef.current = false
+    }
+  }, [])
+
   /**
    * Gère la sélection de fichier
    */
   const handleFileSelect = (file, inputRef = null) => {
     // Vérifier avec le ref pour éviter les doubles déclenchements
-    if (processingRef.current || isProcessing) {
+    if (processingRef.current) {
+      console.log('Already processing, ignoring duplicate file selection')
       return
     }
     
-    if (file && file.type.startsWith('image/')) {
-      // Marquer comme en traitement immédiatement
-      processingRef.current = true
-      setIsProcessing(true)
-      
-      // Réinitialiser l'input immédiatement pour éviter les doubles déclenchements
-      if (inputRef && inputRef.current) {
-        inputRef.current.value = ''
-      }
-      
-      // Créer une preview et ouvrir le rogneur
-      const reader = new FileReader()
-      reader.onloadend = () => {
+    if (!file) {
+      return
+    }
+    
+    if (!file.type.startsWith('image/')) {
+      alert(t('invalidImage'))
+      return
+    }
+    
+    // Marquer comme en traitement immédiatement
+    processingRef.current = true
+    setIsProcessing(true)
+    
+    // Réinitialiser l'input immédiatement pour éviter les doubles déclenchements
+    if (inputRef && inputRef.current) {
+      inputRef.current.value = ''
+    }
+    
+    // Créer une preview et ouvrir le rogneur
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      try {
         setImageToCrop(reader.result)
         setShowCropper(true)
-      }
-      reader.onerror = () => {
+      } catch (error) {
+        console.error('Error setting image to crop:', error)
         processingRef.current = false
         setIsProcessing(false)
-        alert(t('invalidImage') || 'Erreur lors de la lecture de l\'image')
       }
-      reader.readAsDataURL(file)
-    } else {
+    }
+    reader.onerror = () => {
+      console.error('FileReader error')
       processingRef.current = false
       setIsProcessing(false)
-      alert(t('invalidImage'))
+      alert(t('invalidImage') || 'Erreur lors de la lecture de l\'image')
+    }
+    
+    try {
+      reader.readAsDataURL(file)
+    } catch (error) {
+      console.error('Error reading file:', error)
+      processingRef.current = false
+      setIsProcessing(false)
+      alert(t('invalidImage') || 'Erreur lors de la lecture de l\'image')
     }
   }
 
@@ -93,11 +120,10 @@ function ImageUpload({ onImageUpload }) {
       e.stopPropagation() // Empêcher la propagation au parent
       e.preventDefault()
     }
-    // Vérifier qu'on n'est pas déjà en train de traiter
-    if (processingRef.current || isProcessing) {
-      return
+    // Ne pas bloquer, laisser le onChange gérer
+    if (fileInputRef.current && !processingRef.current) {
+      fileInputRef.current.click()
     }
-    fileInputRef.current?.click()
   }
 
   const handleCameraClick = (e) => {
@@ -105,11 +131,10 @@ function ImageUpload({ onImageUpload }) {
       e.stopPropagation() // Empêcher la propagation au parent
       e.preventDefault()
     }
-    // Vérifier qu'on n'est pas déjà en train de traiter
-    if (processingRef.current || isProcessing) {
-      return
+    // Ne pas bloquer, laisser le onChange gérer
+    if (cameraInputRef.current && !processingRef.current) {
+      cameraInputRef.current.click()
     }
-    cameraInputRef.current?.click()
   }
 
   /**
@@ -161,16 +186,12 @@ function ImageUpload({ onImageUpload }) {
           type="file"
           accept="image/*"
           className="hidden"
-          disabled={isProcessing}
           onChange={(e) => {
             const file = e.target.files?.[0]
-            if (file && !processingRef.current) {
-              // Réinitialiser immédiatement avant de traiter
-              e.target.value = ''
+            // Réinitialiser immédiatement pour permettre une nouvelle sélection
+            e.target.value = ''
+            if (file) {
               handleFileSelect(file, fileInputRef)
-            } else {
-              // Si déjà en traitement, réinitialiser sans traiter
-              e.target.value = ''
             }
           }}
         />
@@ -180,16 +201,12 @@ function ImageUpload({ onImageUpload }) {
           accept="image/*"
           capture="environment"
           className="hidden"
-          disabled={isProcessing}
           onChange={(e) => {
             const file = e.target.files?.[0]
-            if (file && !processingRef.current) {
-              // Réinitialiser immédiatement avant de traiter
-              e.target.value = ''
+            // Réinitialiser immédiatement pour permettre une nouvelle sélection
+            e.target.value = ''
+            if (file) {
               handleFileSelect(file, cameraInputRef)
-            } else {
-              // Si déjà en traitement, réinitialiser sans traiter
-              e.target.value = ''
             }
           }}
         />
