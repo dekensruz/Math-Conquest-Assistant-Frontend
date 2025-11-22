@@ -115,50 +115,70 @@ function ImageCropper({ imageSrc, onCrop, onCancel }) {
     if (!imageRef.current || !canvasRef.current) return
 
     const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d', { willReadFrequently: false })
+    const ctx = canvas.getContext('2d', { 
+      willReadFrequently: false,
+      alpha: true,
+      desynchronized: false
+    })
     const img = imageRef.current
+    
+    // Obtenir les dimensions réelles de l'image
+    const imgNaturalWidth = img.naturalWidth || img.width
+    const imgNaturalHeight = img.naturalHeight || img.height
     
     // Calculer le ratio de l'image réelle vs affichée
     const containerWidth = containerRef.current.clientWidth
     const containerHeight = containerRef.current.clientHeight
-    const scale = Math.min(containerWidth / img.naturalWidth, containerHeight / img.naturalHeight, 1)
-    const displayWidth = img.naturalWidth * scale
-    const displayHeight = img.naturalHeight * scale
+    const scaleX = containerWidth / imgNaturalWidth
+    const scaleY = containerHeight / imgNaturalHeight
+    const scale = Math.min(scaleX, scaleY, 1)
     
-    // Convertir les coordonnées de rognage en coordonnées réelles (utiliser les dimensions naturelles)
-    const cropX = Math.round((cropArea.x / displayWidth) * img.naturalWidth)
-    const cropY = Math.round((cropArea.y / displayHeight) * img.naturalHeight)
-    const cropWidth = Math.round((cropArea.width / displayWidth) * img.naturalWidth)
-    const cropHeight = Math.round((cropArea.height / displayHeight) * img.naturalHeight)
+    const displayWidth = imgNaturalWidth * scale
+    const displayHeight = imgNaturalHeight * scale
+    
+    // Convertir les coordonnées de rognage en coordonnées réelles avec précision
+    const cropX = Math.max(0, Math.round((cropArea.x / displayWidth) * imgNaturalWidth))
+    const cropY = Math.max(0, Math.round((cropArea.y / displayHeight) * imgNaturalHeight))
+    const cropWidth = Math.min(
+      Math.round((cropArea.width / displayWidth) * imgNaturalWidth),
+      imgNaturalWidth - cropX
+    )
+    const cropHeight = Math.min(
+      Math.round((cropArea.height / displayHeight) * imgNaturalHeight),
+      imgNaturalHeight - cropY
+    )
     
     // S'assurer que les dimensions sont valides
-    if (cropWidth <= 0 || cropHeight <= 0 || cropX < 0 || cropY < 0) {
-      console.error('Invalid crop dimensions')
+    if (cropWidth <= 0 || cropHeight <= 0 || cropX < 0 || cropY < 0 || 
+        cropX + cropWidth > imgNaturalWidth || cropY + cropHeight > imgNaturalHeight) {
+      console.error('Invalid crop dimensions', { cropX, cropY, cropWidth, cropHeight, imgNaturalWidth, imgNaturalHeight })
       return
     }
     
-    // Configurer le canvas avec les dimensions réelles (pas de downscaling)
+    // Configurer le canvas avec les dimensions exactes (pas de downscaling)
     canvas.width = cropWidth
     canvas.height = cropHeight
     
-    // Améliorer la qualité du rendu
+    // Activer le lissage avec qualité maximale pour les photos
     ctx.imageSmoothingEnabled = true
     ctx.imageSmoothingQuality = 'high'
     
-    // Dessiner l'image rognée directement depuis les dimensions naturelles
+    // Dessiner l'image rognée pixel par pixel depuis les dimensions naturelles
     ctx.drawImage(
       img,
-      cropX, cropY, cropWidth, cropHeight,
-      0, 0, cropWidth, cropHeight
+      cropX, cropY, cropWidth, cropHeight,  // Source: coordonnées réelles
+      0, 0, cropWidth, cropHeight           // Destination: canvas à taille réelle
     )
     
-    // Convertir en blob avec qualité maximale
+    // Convertir en blob en PNG pour préserver la qualité maximale (pas de compression)
     canvas.toBlob((blob) => {
       if (blob) {
-        const file = new File([blob], 'cropped-image.jpg', { type: 'image/jpeg' })
+        const file = new File([blob], 'cropped-image.png', { type: 'image/png' })
         onCrop(file)
+      } else {
+        console.error('Failed to create blob from canvas')
       }
-    }, 'image/jpeg', 1.0) // Qualité maximale (1.0 au lieu de 0.95)
+    }, 'image/png') // PNG pour qualité maximale sans compression
   }
 
   return (
