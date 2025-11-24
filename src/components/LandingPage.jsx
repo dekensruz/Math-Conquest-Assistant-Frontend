@@ -1,47 +1,154 @@
+import React, { useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
 import ThemeToggle from './ThemeToggle'
+import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
+import { Scan, Brain, MessageCircle, ChevronRight, CheckCircle2, Zap, ArrowRight, Calculator } from 'lucide-react'
 
+// --- Composant de Simulation (Hero Graphic) ---
+const HeroSimulation = () => {
+  const [step, setStep] = useState(0)
+
+  // Cycle d'animation de la simulation
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setStep((prev) => (prev + 1) % 4) // 0: Idle, 1: Scanning, 2: Processing, 3: Solved
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [])
+
+  return (
+    <div className="relative w-full max-w-md mx-auto perspective-1000">
+      {/* Phone Frame */}
+      <motion.div 
+        initial={{ rotateY: -10, rotateX: 5 }}
+        animate={{ rotateY: [-5, 5, -5], rotateX: [2, -2, 2] }}
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="relative z-20 bg-gray-900 rounded-[2.5rem] border-[8px] border-gray-800 shadow-2xl overflow-hidden aspect-[9/18]"
+      >
+        {/* Dynamic Notch */}
+        <div className="absolute top-0 inset-x-0 h-6 bg-gray-800 z-50 rounded-b-xl w-1/2 mx-auto" />
+
+        {/* Screen Content */}
+        <div className="relative h-full bg-gray-950 flex flex-col p-4 pt-10">
+          
+          {/* Header */}
+          <div className="flex justify-between items-center text-white/50 mb-4 px-2">
+            <Scan size={20} />
+            <span className="text-xs font-mono">AI SCANNER</span>
+            <div className="w-5 h-5 rounded-full bg-blue-500/20 flex items-center justify-center">
+              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
+            </div>
+          </div>
+
+          {/* Camera View / Equation */}
+          <div className="relative flex-1 bg-gray-800/50 rounded-2xl flex items-center justify-center overflow-hidden border border-white/5">
+            <div className="text-white text-3xl font-serif font-italic tracking-wider">
+              x² + 5x + 6 = 0
+            </div>
+            
+            {/* Grid Overlay */}
+            <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:20px_20px]" />
+
+            {/* Scanning Line Animation */}
+            <AnimatePresence>
+              {(step === 1 || step === 0) && (
+                <motion.div
+                  initial={{ top: "0%", opacity: 0 }}
+                  animate={{ top: "100%", opacity: [0, 1, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                  className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-blue-500 to-transparent shadow-[0_0_15px_rgba(59,130,246,0.6)]"
+                />
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Solution Popup */}
+          <AnimatePresence mode="wait">
+            {step >= 2 && (
+              <motion.div
+                initial={{ y: 100, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 100, opacity: 0 }}
+                className="absolute bottom-4 left-4 right-4 bg-white dark:bg-gray-800 rounded-xl p-4 shadow-xl border border-gray-100 dark:border-gray-700 z-30"
+              >
+                {step === 2 ? (
+                  <div className="flex items-center gap-3">
+                    <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Analyse en cours...</span>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-green-500 uppercase tracking-wider">Résolu</span>
+                      <CheckCircle2 size={16} className="text-green-500" />
+                    </div>
+                    <div className="font-mono text-sm text-gray-800 dark:text-gray-200">
+                      (x + 2)(x + 3) = 0<br/>
+                      <span className="text-blue-600 dark:text-blue-400 font-bold">x = -2, x = -3</span>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+      
+      {/* Decorative Glows around phone */}
+      <div className="absolute top-1/4 -left-12 w-64 h-64 bg-blue-500/30 rounded-full blur-[80px] -z-10 animate-pulse" />
+      <div className="absolute bottom-1/4 -right-12 w-64 h-64 bg-purple-500/30 rounded-full blur-[80px] -z-10 animate-pulse delay-700" />
+    </div>
+  )
+}
+
+// --- Main Component ---
 function LandingPage({ onStart }) {
   const { t, language, setLanguage } = useLanguage()
+  const { scrollYProgress } = useScroll()
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0])
+  
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.15 }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { 
+      y: 0, 
+      opacity: 1,
+      transition: { type: "spring", stiffness: 100 }
+    }
+  }
 
   const features = [
     {
       title: t('smartScan'),
       description: t('smartScanDesc'),
-      icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
-      ),
-      accent: 'from-blue-500/10 to-blue-500/5 text-blue-600'
+      icon: <Scan className="w-6 h-6" />,
+      color: "blue"
     },
     {
       title: t('stepByStep'),
       description: t('stepByStepDesc'),
-      icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-        </svg>
-      ),
-      accent: 'from-indigo-500/10 to-indigo-500/5 text-indigo-600'
+      icon: <Brain className="w-6 h-6" />,
+      color: "indigo"
     },
     {
       title: t('interactiveChat'),
       description: t('interactiveChatDesc'),
-      icon: (
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-        </svg>
-      ),
-      accent: 'from-purple-500/10 to-purple-500/5 text-purple-600'
+      icon: <MessageCircle className="w-6 h-6" />,
+      color: "purple"
     }
   ]
 
   const stats = [
-    { label: t('statStudents'), value: '150K+' },
-    { label: t('statAccuracy'), value: '98.5%' },
-    { label: t('statLanguages'), value: '2' }
+    { label: t('statStudents'), value: '150K+', icon: <Brain size={20} /> },
+    { label: t('statAccuracy'), value: '99.9%', icon: <Zap size={20} /> },
+    { label: t('statLanguages'), value: '2', icon: <MessageCircle size={20} /> }
   ]
 
   const timeline = [
@@ -52,176 +159,268 @@ function LandingPage({ onStart }) {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-white font-sans transition-colors">
-      <nav className="sticky top-0 z-50 w-full border-b border-gray-200 dark:border-gray-800 bg-white/70 dark:bg-gray-950/70 backdrop-blur-lg">
+    <div className="min-h-screen bg-gray-50 dark:bg-black text-gray-900 dark:text-white font-sans overflow-x-hidden selection:bg-blue-500/30">
+      
+      {/* Background Tech Grid */}
+      <div className="fixed inset-0 z-0 opacity-[0.03] dark:opacity-[0.07] pointer-events-none" 
+           style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")` }} 
+      />
+
+      <nav className="sticky top-0 z-50 w-full border-b border-gray-200/50 dark:border-white/10 bg-white/70 dark:bg-black/70 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                </svg>
+            <motion.div 
+              initial={{ x: -20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="flex items-center gap-3"
+            >
+              <div className="w-10 h-10 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20">
+                <Calculator className="text-white w-6 h-6" />
               </div>
-              <span className="text-xl font-bold tracking-tight">Math Conquest</span>
-            </div>
-            <div className="flex items-center gap-3 sm:gap-4">
-              <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full p-1 shadow-inner border border-gray-200 dark:border-gray-700">
-                <button
-                  onClick={() => setLanguage('fr')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${language === 'fr' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
-                >
-                  FR
-                </button>
-                <button
-                  onClick={() => setLanguage('en')}
-                  className={`px-3 py-1 text-xs font-semibold rounded-full transition-all ${language === 'en' ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm' : 'text-gray-500 hover:text-gray-900 dark:hover:text-white'}`}
-                >
-                  EN
-                </button>
+              <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+                Math Conquest
+              </span>
+            </motion.div>
+            
+            <motion.div 
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              className="flex items-center gap-3 sm:gap-4"
+            >
+               <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-full p-1 border border-gray-200 dark:border-gray-700">
+                {['fr', 'en'].map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => setLanguage(lang)}
+                    className={`px-3 py-1 text-xs font-bold rounded-full transition-all duration-300 ${language === lang ? 'bg-white dark:bg-gray-700 text-blue-600 shadow-sm transform scale-105' : 'text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'}`}
+                  >
+                    {lang.toUpperCase()}
+                  </button>
+                ))}
               </div>
               <ThemeToggle />
               <button
                 onClick={onStart}
-                className="hidden sm:flex px-5 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full font-semibold hover:-translate-y-0.5 transition-all shadow-lg shadow-gray-900/10 dark:shadow-white/10"
+                className="hidden sm:flex group relative px-6 py-2.5 bg-gray-900 dark:bg-white text-white dark:text-gray-900 rounded-full font-semibold overflow-hidden transition-all shadow-lg hover:shadow-xl"
               >
-                {t('start')}
+                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:animate-shimmer" />
+                <span className="relative flex items-center gap-2">
+                  {t('start')} <ChevronRight size={16} />
+                </span>
               </button>
-            </div>
+            </motion.div>
           </div>
         </div>
       </nav>
 
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-b from-blue-50 via-white to-transparent dark:from-indigo-900/30 dark:via-gray-950/80" />
-        <div className="absolute top-10 left-1/2 -translate-x-1/2 w-[900px] h-[900px] bg-gradient-to-tr from-blue-500/20 via-purple-500/20 to-transparent blur-3xl opacity-60 animate-pulse" />
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 pt-24 pb-16 text-center">
-          <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-800 shadow-sm text-sm font-semibold tracking-widest uppercase text-blue-600">
-            {t('heroBadge')}
-          </div>
-          <h1 className="mt-8 text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight">
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-gray-900 via-blue-700 to-gray-900 dark:from-white dark:via-blue-200 dark:to-white">
-              {t('heroTitle')}
-            </span>
-            <br />
-            <span className="text-blue-600 dark:text-blue-400">{t('heroSubtitle')}</span>
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-            {t('heroDesc')}
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={onStart}
-              className="px-10 py-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-2xl font-semibold text-lg shadow-xl shadow-blue-500/30 hover:translate-y-0.5 transition-all"
+      {/* Hero Section */}
+      <section className="relative pt-20 pb-32 overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
+            
+            {/* Left Column: Text */}
+            <motion.div 
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+              className="text-center lg:text-left"
             >
-              {t('tryFree')}
-            </button>
-            <a
-              href="#features"
-              className="px-10 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl font-semibold text-lg hover:-translate-y-0.5 transition-all shadow-md"
-            >
-              {t('learnMore')}
-            </a>
-          </div>
-
-          <div className="mt-16 grid grid-cols-1 sm:grid-cols-3 gap-6">
-            {stats.map((stat) => (
-              <div key={stat.label} className="bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-lg shadow-gray-900/5 dark:shadow-black/30">
-                <p className="text-4xl font-extrabold text-blue-600">{stat.value}</p>
-                <p className="mt-2 text-sm uppercase tracking-widest text-gray-500 dark:text-gray-400">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="py-24">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className={`bg-white dark:bg-gray-900 p-8 rounded-2xl border border-gray-100 dark:border-gray-800 shadow-xl shadow-gray-900/5 dark:shadow-black/40 hover:-translate-y-1 transition-transform`}
-              >
-                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${feature.accent} flex items-center justify-center mb-6`}>
-                  {feature.icon}
-                </div>
-                <h3 className="text-2xl font-semibold mb-3">{feature.title}</h3>
-                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Timeline */}
-      <section className="py-24 bg-gradient-to-b from-white to-gray-50 dark:from-gray-950 dark:to-gray-900">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-14">
-            <p className="text-blue-600 font-semibold uppercase tracking-widest text-xs">{t('stepByStep')}</p>
-            <h2 className="text-3xl sm:text-4xl font-bold mt-3">{t('journeyTitle')}</h2>
-            <p className="text-gray-600 dark:text-gray-400 mt-4 max-w-2xl mx-auto">{t('journeySubtitle')}</p>
-          </div>
-          <div className="space-y-6">
-            {timeline.map((item, idx) => (
-              <div key={item.title} className="flex flex-col sm:flex-row gap-4 bg-white dark:bg-gray-900 rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-lg">
-                <div className="flex items-center gap-3">
-                  <span className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 font-bold text-lg flex items-center justify-center">
-                    {String(idx + 1).padStart(2, '0')}
-                  </span>
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold">{item.title}</h3>
-                  <p className="text-gray-600 dark:text-gray-400 mt-2">{item.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 rounded-3xl p-10 text-center text-white shadow-2xl relative overflow-hidden border border-white/10">
-            <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_#ffffff33,_transparent_45%)]"></div>
-            <div className="relative z-10 space-y-4">
-              <p className="uppercase tracking-[0.5em] text-xs font-semibold text-white/80">{t('heroBadge')}</p>
-              <h3 className="text-3xl sm:text-4xl font-bold">{t('ctaTitle')}</h3>
-              <p className="text-white/90 max-w-3xl mx-auto">{t('ctaSubtitle')}</p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+              <motion.div variants={itemVariants} className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 text-sm font-semibold tracking-wide text-blue-600 dark:text-blue-400 mb-8">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                </span>
+                {t('heroBadge')}
+              </motion.div>
+              
+              <motion.h1 variants={itemVariants} className="text-5xl sm:text-7xl font-extrabold leading-tight tracking-tight mb-6">
+                {t('heroTitle')} <br />
+                <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 dark:from-blue-400 dark:via-indigo-400 dark:to-purple-400 animate-gradient-x">
+                  {t('heroSubtitle')}
+                </span>
+              </motion.h1>
+              
+              <motion.p variants={itemVariants} className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto lg:mx-0 mb-10 leading-relaxed">
+                {t('heroDesc')}
+              </motion.p>
+              
+              <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <button
                   onClick={onStart}
-                  className="px-8 py-3 bg-white text-blue-800 rounded-full font-semibold shadow-lg hover:-translate-y-0.5 transition-all"
+                  className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold text-lg shadow-xl shadow-blue-500/30 hover:shadow-blue-500/40 hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
                 >
-                  {t('ctaButton')}
+                  {t('tryFree')} <ArrowRight size={20} />
                 </button>
                 <a
                   href="#features"
-                  className="px-8 py-3 border-2 border-white/30 text-white rounded-full font-semibold hover:bg-white/10 transition-all"
+                  className="px-8 py-4 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 text-gray-900 dark:text-white rounded-2xl font-bold text-lg hover:-translate-y-1 transition-all shadow-sm hover:shadow-md flex items-center justify-center"
                 >
-                  {t('ctaSecondary')}
+                  {t('learnMore')}
                 </a>
+              </motion.div>
+
+              <motion.div variants={itemVariants} className="mt-12 flex items-center justify-center lg:justify-start gap-8 opacity-80 grayscale hover:grayscale-0 transition-all">
+                 {/* Mini Stats Row */}
+                 {stats.map((stat, i) => (
+                    <div key={i} className="flex flex-col">
+                        <span className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</span>
+                        <span className="text-xs text-gray-500 uppercase tracking-wider">{stat.label}</span>
+                    </div>
+                 ))}
+              </motion.div>
+            </motion.div>
+
+            {/* Right Column: Simulation */}
+            <motion.div 
+              initial={{ opacity: 0, x: 50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative hidden lg:block"
+            >
+               <HeroSimulation />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section with Hover Effects */}
+      <section id="features" className="py-32 relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-center mb-20"
+            >
+              <h2 className="text-3xl md:text-5xl font-bold mb-6">{t('smartScan')} & More</h2>
+              <p className="text-xl text-gray-600 dark:text-gray-400">Tout ce dont tu as besoin pour exceller en maths.</p>
+            </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {features.map((feature, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                whileHover={{ y: -10 }}
+                className="group relative bg-white dark:bg-gray-900/50 backdrop-blur-sm p-8 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-xl dark:shadow-none hover:shadow-2xl hover:border-blue-500/30 transition-all duration-300"
+              >
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 transition-colors duration-300
+                    ${feature.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400 group-hover:bg-blue-600 group-hover:text-white' : ''}
+                    ${feature.color === 'indigo' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 group-hover:bg-indigo-600 group-hover:text-white' : ''}
+                    ${feature.color === 'purple' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 group-hover:bg-purple-600 group-hover:text-white' : ''}
+                `}>
+                  {feature.icon}
+                </div>
+                <h3 className="text-2xl font-bold mb-3">{feature.title}</h3>
+                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{feature.description}</p>
+                
+                {/* Decorative corner blob */}
+                <div className="absolute top-0 right-0 -mr-4 -mt-4 w-24 h-24 bg-gradient-to-br from-blue-500/10 to-purple-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity" />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Timeline with Animated Connector */}
+      <section className="py-32 bg-gray-50 dark:bg-black/50 overflow-hidden">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div 
+             initial={{ opacity: 0 }}
+             whileInView={{ opacity: 1 }}
+             viewport={{ once: true }}
+             className="text-center mb-20"
+          >
+            <span className="text-blue-600 dark:text-blue-400 font-bold tracking-wider uppercase text-sm">{t('stepByStep')}</span>
+            <h2 className="text-4xl font-bold mt-3 mb-4">{t('journeyTitle')}</h2>
+          </motion.div>
+
+          <div className="relative space-y-12">
+            {/* Connecting Line */}
+            <div className="absolute left-[27px] top-6 bottom-6 w-0.5 bg-gray-200 dark:bg-gray-800 sm:left-1/2 sm:-ml-px" />
+
+            {timeline.map((item, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, x: idx % 2 === 0 ? -50 : 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.6 }}
+                className={`relative flex items-center ${idx % 2 === 0 ? 'sm:flex-row' : 'sm:flex-row-reverse'}`}
+              >
+                {/* Dot */}
+                <div className="absolute left-0 sm:left-1/2 w-14 h-14 -ml-[2px] sm:-ml-7 flex items-center justify-center z-10">
+                   <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-900 border-4 border-blue-500 shadow-lg flex items-center justify-center font-bold text-gray-900 dark:text-white text-sm">
+                      {idx + 1}
+                   </div>
+                </div>
+
+                {/* Content Box */}
+                <div className={`ml-20 sm:ml-0 w-full sm:w-1/2 ${idx % 2 === 0 ? 'sm:pr-16' : 'sm:pl-16'}`}>
+                  <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-800 hover:-translate-y-1 transition-transform">
+                    <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
+                      {item.title}
+                    </h3>
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">{item.desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-24 px-4">
+        <div className="max-w-5xl mx-auto">
+          <motion.div 
+            initial={{ scale: 0.95, opacity: 0 }}
+            whileInView={{ scale: 1, opacity: 1 }}
+            viewport={{ once: true }}
+            className="relative bg-gradient-to-r from-blue-700 via-indigo-700 to-purple-800 rounded-[2.5rem] p-12 sm:p-20 text-center text-white shadow-2xl overflow-hidden"
+          >
+            {/* Animated Background Elements inside CTA */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0">
+               <div className="absolute top-[-50%] left-[-20%] w-[500px] h-[500px] bg-blue-500/30 rounded-full blur-[100px] animate-pulse" />
+               <div className="absolute bottom-[-50%] right-[-20%] w-[500px] h-[500px] bg-purple-500/30 rounded-full blur-[100px] animate-pulse delay-1000" />
+            </div>
+
+            <div className="relative z-10 space-y-8">
+              <h3 className="text-4xl sm:text-5xl font-bold tracking-tight">{t('ctaTitle')}</h3>
+              <p className="text-blue-100 text-lg max-w-2xl mx-auto">{t('ctaSubtitle')}</p>
+              
+              <div className="flex flex-col sm:flex-row justify-center gap-4 pt-4">
+                <button
+                  onClick={onStart}
+                  className="px-10 py-4 bg-white text-blue-900 rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300"
+                >
+                  {t('ctaButton')}
+                </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 py-6">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-xs sm:text-sm text-gray-600 dark:text-gray-400">
-          <p>
+      <footer className="bg-white dark:bg-black border-t border-gray-200 dark:border-gray-800 py-12">
+        <div className="max-w-6xl mx-auto px-4 text-center">
+            <div className="flex justify-center mb-8 space-x-6">
+                {/* Social Placeholders if needed */}
+            </div>
+          <p className="text-gray-500 dark:text-gray-500 text-sm">
             &copy; {new Date().getFullYear()} {t('footerText')}{' '}
             <a
               href="http://portfoliodek.netlify.app/"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+              className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-80 transition-opacity"
             >
               Dekens Ruzuba
-            </a>. {t('allRightsReserved')}
+            </a>
           </p>
         </div>
       </footer>

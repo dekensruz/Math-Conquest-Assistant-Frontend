@@ -10,13 +10,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.6.2",
+    "framer-motion": "^12.23.24",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^2.5.1",
+    "katex": "^0.16.9",
+    "lucide-react": "^0.554.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "axios": "^1.6.2",
-    "katex": "^0.16.9",
-    "react-katex": "^3.0.1",
-    "jspdf": "^2.5.1",
-    "html2canvas": "^1.4.1"
+    "react-katex": "^3.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
@@ -32,4 +34,3 @@
     "vite": "^5.0.8"
   }
 }
-
