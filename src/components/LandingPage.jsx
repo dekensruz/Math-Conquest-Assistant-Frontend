@@ -5,19 +5,21 @@ import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion'
 import { Scan, Brain, MessageCircle, ChevronRight, CheckCircle2, Zap, ArrowRight, Calculator } from 'lucide-react'
 
 // --- Composant de Simulation (Hero Graphic) ---
+// --- Composant de Simulation (Hero Graphic) ---
 const HeroSimulation = () => {
   const [step, setStep] = useState(0)
 
   // Cycle d'animation de la simulation
   useEffect(() => {
     const timer = setInterval(() => {
-      setStep((prev) => (prev + 1) % 4) // 0: Idle, 1: Scanning, 2: Processing, 3: Solved
+      setStep((prev) => (prev + 1) % 4)
     }, 3000)
     return () => clearInterval(timer)
   }, [])
 
   return (
-    <div className="relative w-full max-w-md mx-auto perspective-1000">
+    // CHANGEMENT ICI : max-w-[280px] sur mobile, sm:max-w-md sur tablette/desktop
+    <div className="relative w-full max-w-[280px] sm:max-w-md mx-auto perspective-1000">
       {/* Phone Frame */}
       <motion.div 
         initial={{ rotateY: -10, rotateX: 5 }}
@@ -74,7 +76,7 @@ const HeroSimulation = () => {
                 {step === 2 ? (
                   <div className="flex items-center gap-3">
                     <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Analyse en cours...</span>
+                    <span className="text-sm font-medium text-gray-600 dark:text-gray-300">Analyse...</span>
                   </div>
                 ) : (
                   <div>
@@ -270,12 +272,13 @@ function LandingPage({ onStart }) {
               </motion.div>
             </motion.div>
 
-            {/* Right Column: Simulation */}
+          {/* Right Column: Simulation */}
             <motion.div 
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="relative hidden lg:block"
+              // CHANGEMENT ICI : 'hidden' supprimé, ajout de 'mt-16' pour espacer sur mobile
+              className="relative block mt-16 lg:mt-0"
             >
                <HeroSimulation />
             </motion.div>
