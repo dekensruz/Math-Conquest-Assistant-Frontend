@@ -8,6 +8,7 @@ import ThemeToggle from './components/ThemeToggle'
 import LandingPage from './components/LandingPage'
 import ProblemReview from './components/ProblemReview'
 import ChatWidget from './components/ChatWidget'
+import ErrorBoundary from './components/ErrorBoundary'
 import { ThemeProvider } from './contexts/ThemeContext'
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext'
 import { apiFetch } from './utils/apiClient'
@@ -27,6 +28,10 @@ function MainContent() {
   const [isHistoryCollapsed, setIsHistoryCollapsed] = useState(false)
   const chatWidgetRef = useRef(null)
   const { t, language, setLanguage } = useLanguage()
+
+  /* State for Interactive Retry */
+  const [showRetryDialog, setShowRetryDialog] = useState(false)
+  const [retryInstructions, setRetryInstructions] = useState('')
 
   /**
    * Tente d'extraire un message d'erreur exploitable depuis une réponse HTTP
@@ -90,12 +95,12 @@ function MainContent() {
       setCurrentStep('confirm')
     } catch (err) {
       let errorMessage = err.message || 'Une erreur est survenue lors de l\'extraction du LaTeX'
-      
+
       // Message plus explicite pour les erreurs de connexion
       if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
         errorMessage = 'Impossible de se connecter au backend. Assurez-vous que le backend est lancé (python main.py dans le dossier backend).'
       }
-      
+
       setError(errorMessage)
       setCurrentStep('upload')
     } finally {
@@ -110,7 +115,7 @@ function MainContent() {
   const handleSolve = async (customLatex = null) => {
     const latexToSolve = customLatex || latexProblem
     setLatexProblem(latexToSolve) // Mettre à jour le LaTeX si personnalisé
-    
+
     setLoading(true)
     setError(null)
     setCurrentStep('solving')
@@ -121,9 +126,9 @@ function MainContent() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           latex: latexToSolve,
-          language: language 
+          language: language
         }),
       })
 
@@ -140,7 +145,7 @@ function MainContent() {
       setCurrentStep('solution')
     } catch (err) {
       let errorMessage = err.message || 'Une erreur est survenue lors de la résolution'
-      
+
       // Message plus explicite pour les erreurs de connexion
       if (err.message && (err.message.includes('Failed to fetch') || err.message.includes('NetworkError'))) {
         errorMessage = 'Impossible de se connecter au backend. Assurez-vous que le backend est lancé (python main.py dans le dossier backend).'
@@ -157,7 +162,7 @@ function MainContent() {
    * Sélectionne un problème depuis l'historique
    */
   const handleSelectProblem = (problem, solution) => {
-      setLatexProblem(problem)
+    setLatexProblem(problem)
     setSolution(solution)
     setCurrentStep('solution')
   }
@@ -193,268 +198,305 @@ function MainContent() {
     }
   }
 
+  const handleRetryWithInstructions = () => {
+    setShowRetryDialog(true)
+  }
+
+  const submitRetry = () => {
+    // Mock logic: In a real app, we would send 'solution' context + 'retryInstructions' to the API
+    // Here we just re-solve with the same problem but pretend we used instructions
+    // For now, let's just trigger a re-solve and maybe show a toast or simply re-run the solve to simulate "trying again"
+
+    setShowRetryDialog(false)
+    handleSolve(latexProblem)
+  }
+
   return (
     <div className="min-h-[100dvh] flex flex-col bg-gray-50/50 dark:bg-gray-950 transition-colors font-sans overflow-x-hidden">
+
+      {/* Interactive Retry Dialog */}
+      {showRetryDialog && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-fade-in">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-lg p-6 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-xl font-bold mb-4">Donner des directives au solveur</h3>
+            <p className="text-sm text-gray-500 mb-4">La solution n'est pas correcte ? Expliquez ce qui ne va pas ou la méthode à utiliser.</p>
+            <textarea
+              className="w-full h-32 p-3 rounded-xl border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-all"
+              placeholder="Ex: Utilise le discriminant, ou détaille plus l'étape 2..."
+              value={retryInstructions}
+              onChange={(e) => setRetryInstructions(e.target.value)}
+            />
+            <div className="flex justify-end gap-3 mt-6">
+              <button onClick={() => setShowRetryDialog(false)} className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors">Annuler</button>
+              <button onClick={submitRetry} className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-500/30 transition-all">
+                Relancer la résolution
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex-1 flex relative w-full">
         {/* Menu latéral Historique (Nouveau Design) */}
-        <HistorySidebar 
-          onSelectProblem={handleSelectProblem} 
+        <HistorySidebar
+          onSelectProblem={handleSelectProblem}
           onCollapseChange={(collapsed) => setIsHistoryCollapsed(collapsed)}
         />
-        
+
         {/* Contenu principal - Ajusté avec une marge gauche pour éviter le chevauchement avec le dock */}
         <div
           className="flex-1 flex flex-col min-w-0 w-full transition-all duration-500 lg:ml-[var(--sidebar-width)]"
           style={{ '--sidebar-width': isHistoryCollapsed ? '4rem' : '18rem' }}
         >
-        {/* Header - Design amélioré */}
-        <header className="bg-gradient-to-r from-white via-blue-50/30 to-white dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 shadow-md border-b border-blue-100 dark:border-gray-700 transition-colors">
-          <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center">
-              <button 
-                onClick={handleBackToLanding}
-                className="flex items-center gap-3 hover:opacity-90 transition-all group"
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-xl group-hover:shadow-blue-500/40 group-hover:scale-105 transition-all">
-                  <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
+          {/* Header - Design amélioré */}
+          <header className="bg-gradient-to-r from-white via-blue-50/30 to-white dark:from-gray-800 dark:via-gray-800 dark:to-gray-800 shadow-md border-b border-blue-100 dark:border-gray-700 transition-colors">
+            <div className="max-w-5xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+              <div className="flex justify-between items-center">
+                <button
+                  onClick={handleBackToLanding}
+                  className="flex items-center gap-3 hover:opacity-90 transition-all group"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-xl group-hover:shadow-blue-500/40 group-hover:scale-105 transition-all">
+                    <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <div className="hidden sm:block">
+                    <h1 className="text-xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
+                      {t('appTitle')}
+                    </h1>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                      {t('appSubtitle')}
+                    </p>
+                  </div>
+                </button>
+
+                <div className="flex items-center gap-3">
+                  {/* Sélecteur de langue */}
+                  <div className="flex items-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl p-1 shadow-inner border border-gray-300 dark:border-gray-600">
+                    <button
+                      onClick={() => setLanguage('fr')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'fr' ? 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-600 dark:to-gray-700 text-blue-600 dark:text-blue-400 shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    >
+                      🇫🇷 FR
+                    </button>
+                    <button
+                      onClick={() => setLanguage('en')}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-600 dark:to-gray-700 text-blue-600 dark:text-blue-400 shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+                    >
+                      🇬🇧 EN
+                    </button>
+                  </div>
+
+                  <ThemeToggle />
                 </div>
-                <div className="hidden sm:block">
-                  <h1 className="text-xl font-extrabold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent leading-tight">
-                    {t('appTitle')}
-                  </h1>
-                  <p className="text-xs text-gray-600 dark:text-gray-400 font-medium">
-                    {t('appSubtitle')}
-                  </p>
-                </div>
-              </button>
-              
-              <div className="flex items-center gap-3">
-                {/* Sélecteur de langue */}
-                <div className="flex items-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 rounded-xl p-1 shadow-inner border border-gray-300 dark:border-gray-600">
-                  <button 
-                    onClick={() => setLanguage('fr')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'fr' ? 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-600 dark:to-gray-700 text-blue-600 dark:text-blue-400 shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                  >
-                    🇫🇷 FR
-                  </button>
-                  <button 
-                    onClick={() => setLanguage('en')}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${language === 'en' ? 'bg-gradient-to-br from-white to-gray-50 dark:from-gray-600 dark:to-gray-700 text-blue-600 dark:text-blue-400 shadow-md' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-                  >
-                    🇬🇧 EN
-                  </button>
-                </div>
-                
-                <ThemeToggle />
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        {/* Main Content Area */}
-        <main className="flex-grow w-full max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8 flex flex-col">
-          {error && (
-            <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r shadow-sm animate-fade-in">
-              <div className="flex">
-                <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
+          {/* Main Content Area */}
+          <main className="flex-grow w-full max-w-5xl mx-auto px-4 py-8 sm:px-6 lg:px-8 flex flex-col">
+            {error && (
+              <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r shadow-sm animate-fade-in">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700 dark:text-red-200 font-medium">
+                      {error}
+                    </p>
+                  </div>
+                  <div className="ml-auto pl-3">
+                    <div className="-mx-1.5 -my-1.5">
+                      <button
+                        onClick={() => setError(null)}
+                        className="inline-flex rounded-md p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none"
+                      >
+                        <span className="sr-only">Fermer</span>
+                        <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div className="ml-3">
-                  <p className="text-sm text-red-700 dark:text-red-200 font-medium">
-                    {error}
+              </div>
+            )}
+
+            {/* Global Loading Indicator */}
+            {loading && currentStep !== 'solving' && (
+              <div className="fixed inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md flex items-center justify-center z-50 transition-all duration-300">
+                <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-10 rounded-3xl shadow-2xl flex flex-col items-center border-2 border-gray-200 dark:border-gray-700">
+                  <LoadingSpinner />
+                  <p className="mt-6 text-lg text-gray-700 dark:text-gray-300 font-semibold">
+                    {t('loading') || 'Chargement...'}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+                    Veuillez patienter
                   </p>
                 </div>
-                <div className="ml-auto pl-3">
-                  <div className="-mx-1.5 -my-1.5">
+              </div>
+            )}
+
+            {/* Main Views */}
+            <div className="transition-all duration-300 ease-in-out">
+              {currentStep === 'upload' && (
+                <div className="animate-fade-in">
+                  <ImageUpload onImageUpload={handleImageUpload} />
+
+                  {/* Mode manuel quick link */}
+                  <div className="mt-8 text-center">
+                    <div className="relative">
+                      <div className="absolute inset-0 flex items-center">
+                        <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
+                      </div>
+                      <div className="relative flex justify-center text-sm">
+                        <span className="px-2 bg-gray-50/50 dark:bg-gray-950 text-gray-500 dark:text-gray-400">
+                          {t('or')}
+                        </span>
+                      </div>
+                    </div>
                     <button
-                      onClick={() => setError(null)}
-                      className="inline-flex rounded-md p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30 focus:outline-none"
+                      onClick={() => {
+                        setInputMode('manual')
+                        setLatexProblem('')
+                        setSolution(null)
+                        setCurrentStep('latex')
+                      }}
+                      className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 transition-colors"
                     >
-                      <span className="sr-only">Fermer</span>
-                      <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                      <svg className="mr-2 -ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
+                      {t('enterManually')}
                     </button>
                   </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Global Loading Indicator */}
-          {loading && currentStep !== 'solving' && (
-            <div className="fixed inset-0 bg-white/90 dark:bg-gray-900/90 backdrop-blur-md flex items-center justify-center z-50 transition-all duration-300">
-              <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 p-10 rounded-3xl shadow-2xl flex flex-col items-center border-2 border-gray-200 dark:border-gray-700">
-                <LoadingSpinner />
-                <p className="mt-6 text-lg text-gray-700 dark:text-gray-300 font-semibold">
-                  {t('loading') || 'Chargement...'}
-                </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                  Veuillez patienter
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Main Views */}
-          <div className="transition-all duration-300 ease-in-out">
-            {currentStep === 'upload' && (
-              <div className="animate-fade-in">
-                <ImageUpload onImageUpload={handleImageUpload} />
-                
-                {/* Mode manuel quick link */}
-                <div className="mt-8 text-center">
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <div className="w-full border-t border-gray-200 dark:border-gray-700"></div>
-                    </div>
-                    <div className="relative flex justify-center text-sm">
-                      <span className="px-2 bg-gray-50/50 dark:bg-gray-950 text-gray-500 dark:text-gray-400">
-                        {t('or')}
-                      </span>
-                    </div>
-                  </div>
-                <button
-                  onClick={() => {
-                    setInputMode('manual')
-                    setLatexProblem('')
-                    setSolution(null)
-                    setCurrentStep('latex')
-                  }}
-                    className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:text-blue-300 dark:hover:bg-blue-900/30 transition-colors"
+              {currentStep === 'confirm' && (
+                <div className="animate-fade-in">
+                  <button
+                    onClick={handleBackToMain}
+                    className="mb-4 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors"
                   >
-                    <svg className="mr-2 -ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    {t('enterManually')}
+                    {t('back')}
                   </button>
-                </div>
-              </div>
-            )}
-
-            {currentStep === 'confirm' && (
-              <div className="animate-fade-in">
-                <button
-                  onClick={handleBackToMain}
-                  className="mb-4 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  {t('back')}
-                </button>
-                <ProblemReview
-                  latex={latexProblem}
-                  onEdit={() => setCurrentStep('latex')}
-                  onSolve={() => handleSolve(latexProblem)}
-                  onReset={handleBackToMain}
-                />
-              </div>
-            )}
-
-            {currentStep === 'latex' && (
-              <div className="animate-fade-in">
-                <button
-                  onClick={() => {
-                    if (inputMode === 'manual') {
-                      handleBackToMain()
-                    } else {
-                      setCurrentStep('confirm')
-                    }
-                  }}
-                  className="mb-4 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                  </svg>
-                  {t('back')}
-                </button>
-                <ProblemDisplay 
-                  latex={latexProblem} 
-                  onSolve={handleSolve} 
-                  onReset={handleCancelEdit}
-                />
-              </div>
-            )}
-
-            {(currentStep === 'solving' || currentStep === 'solution') && (
-              <div className="animate-fade-in">
-                {currentStep === 'solving' ? (
-                   <div className="flex flex-col items-center justify-center py-20 px-6">
-                    <div className="mb-8 w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl animate-pulse">
-                      <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <LoadingSpinner />
-                    <p className="mt-8 text-2xl text-gray-900 dark:text-gray-100 font-bold text-center">
-                      {t('analyzing') || 'Analyse en cours...'}
-                    </p>
-                    <p className="text-base text-gray-500 dark:text-gray-400 mt-3 text-center max-w-md">
-                      {t('analyzingSub') || 'Notre IA résout votre problème étape par étape'}
-                    </p>
-                  </div>
-                ) : (
-                  <SolutionDisplay 
-                    problem={latexProblem} 
-                    solution={solution} 
+                  <ProblemReview
+                    latex={latexProblem}
+                    onEdit={() => setCurrentStep('latex')}
+                    onSolve={() => handleSolve(latexProblem)}
                     onReset={handleBackToMain}
-                    onOpenChat={handleOpenChat}
                   />
-                )}
-              </div>
-            )}
-          </div>
-        </main>
+                </div>
+              )}
 
-        {/* Footer - Design simple et élégant */}
-        <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-3 mt-auto shrink-0">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <p className="text-center sm:text-left text-sm text-gray-600 dark:text-gray-400">
-                &copy; {new Date().getFullYear()} Math Conquest • {t('createdBy')}{' '}
-                <a 
-                  href="http://portfoliodek.netlify.app/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="font-semibold text-blue-600 dark:text-blue-400 hover:underline transition-colors"
-                >
-                  Dekens Ruzuba
-                </a>
-              </p>
-              
-              {/* Bouton pour revenir à la landing page */}
-              {isStarted && (
-                <button
-                  onClick={handleBackToLanding}
-                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
-                  aria-label={t('backToHome') || 'Retour à l\'accueil'}
-                >
-                  <svg 
-                    className="w-4 h-4" 
-                    fill="none" 
-                    viewBox="0 0 24 24" 
-                    stroke="currentColor"
+              {currentStep === 'latex' && (
+                <div className="animate-fade-in">
+                  <button
+                    onClick={() => {
+                      if (inputMode === 'manual') {
+                        handleBackToMain()
+                      } else {
+                        setCurrentStep('confirm')
+                      }
+                    }}
+                    className="mb-4 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 flex items-center gap-1 transition-colors"
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                  </svg>
-                  <span className="hidden sm:inline">{t('backToHome') || 'Retour à l\'accueil'}</span>
-                  <span className="sm:hidden">{t('back') || 'Retour'}</span>
-                </button>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    {t('back')}
+                  </button>
+                  <ProblemDisplay
+                    latex={latexProblem}
+                    onSolve={handleSolve}
+                    onReset={handleCancelEdit}
+                  />
+                </div>
+              )}
+
+              {(currentStep === 'solving' || currentStep === 'solution') && (
+                <div className="animate-fade-in">
+                  {currentStep === 'solving' ? (
+                    <div className="flex flex-col items-center justify-center py-20 px-6">
+                      <div className="mb-8 w-20 h-20 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl animate-pulse">
+                        <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                      </div>
+                      <LoadingSpinner />
+                      <p className="mt-8 text-2xl text-gray-900 dark:text-gray-100 font-bold text-center">
+                        {t('analyzing') || 'Analyse en cours...'}
+                      </p>
+                      <p className="text-base text-gray-500 dark:text-gray-400 mt-3 text-center max-w-md">
+                        {t('analyzingSub') || 'Notre IA résout votre problème étape par étape'}
+                      </p>
+                    </div>
+                  ) : (
+                    <SolutionDisplay
+                      problem={latexProblem}
+                      solution={solution}
+                      onReset={handleBackToMain}
+                      onOpenChat={handleOpenChat}
+                      onRetryWithInstructions={handleRetryWithInstructions}
+                    />
+                  )}
+                </div>
               )}
             </div>
-          </div>
-        </footer>
+          </main>
+
+          {/* Footer - Design simple et élégant */}
+          <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 py-3 mt-auto shrink-0">
+            <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                <p className="text-center sm:text-left text-sm text-gray-600 dark:text-gray-400">
+                  &copy; {new Date().getFullYear()} Math Conquest • {t('createdBy')}{' '}
+                  <a
+                    href="http://portfoliodek.netlify.app/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-semibold text-blue-600 dark:text-blue-400 hover:underline transition-colors"
+                  >
+                    Dekens Ruzuba
+                  </a>
+                </p>
+
+                {/* Bouton pour revenir à la landing page */}
+                {isStarted && (
+                  <button
+                    onClick={handleBackToLanding}
+                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors"
+                    aria-label={t('backToHome') || 'Retour à l\'accueil'}
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                    </svg>
+                    <span className="hidden sm:inline">{t('backToHome') || 'Retour à l\'accueil'}</span>
+                    <span className="sm:hidden">{t('back') || 'Retour'}</span>
+                  </button>
+                )}
+              </div>
+            </div>
+          </footer>
         </div>
       </div>
 
       {/* Widget de chat flottant - visible uniquement sur la page de solution */}
       {currentStep === 'solution' && solution && (
-        <ChatWidget 
+        <ChatWidget
           ref={chatWidgetRef}
           problem={latexProblem}
           solution={solution}
@@ -468,7 +510,9 @@ function App() {
   return (
     <ThemeProvider>
       <LanguageProvider>
-        <MainContent />
+        <ErrorBoundary>
+          <MainContent />
+        </ErrorBoundary>
       </LanguageProvider>
     </ThemeProvider>
   )

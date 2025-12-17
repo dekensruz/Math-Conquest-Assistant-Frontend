@@ -11,7 +11,7 @@ import { useLanguage } from '../contexts/LanguageContext'
  * Composant pour afficher la solution complète avec explications étape par étape
  * Inclut l'export PDF
  */
-function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
+function SolutionDisplay({ problem, solution, onReset, onOpenChat, onRetryWithInstructions }) {
   const { t } = useLanguage()
   const contentRef = useRef(null)
 
@@ -36,13 +36,13 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
       const pageHeight = 297
       const margin = 10
       const contentWidth = pageWidth - 2 * margin
-      
+
       let currentY = margin
 
       // Fonction pour capturer et ajouter une section
       const addSectionToPDF = async (element) => {
         if (!element) return
-        
+
         // Capture avec configuration spécifique pour éviter les problèmes de layout
         const canvas = await html2canvas(element, {
           scale: 2, // Suffisant pour une bonne qualité (3 était peut-être trop lourd)
@@ -59,39 +59,39 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
               block.style.width = 'auto';
               block.style.whiteSpace = 'normal';
             });
-            
+
             // S'assurer que le conteneur cloné a la bonne largeur
             const clonedElement = clonedDoc.body.querySelector('[data-section="' + element.getAttribute('data-section') + '"]');
             if (clonedElement) {
-                clonedElement.style.width = '1100px'; // Largeur fixe pour le rendu
-                clonedElement.style.padding = '20px';
+              clonedElement.style.width = '1100px'; // Largeur fixe pour le rendu
+              clonedElement.style.padding = '20px';
             }
           }
         })
-        
+
         // JPEG qualité 0.8 pour réduire la taille
         const imgData = canvas.toDataURL('image/jpeg', 0.8)
         const imgHeight = (canvas.height * contentWidth) / canvas.width
-        
+
         // Nouvelle page si nécessaire
         if (currentY + imgHeight > pageHeight - margin) {
           pdf.addPage()
           currentY = margin
         }
-        
+
         pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight)
         currentY += imgHeight + 5 // Espace entre sections
       }
 
       // On utilise à nouveau data-section pour cibler proprement les blocs
       const sections = ['problem', 'steps', 'answer', 'summary']
-      
+
       for (const sectionName of sections) {
-          // On cherche l'élément dans le DOM actuel
-          const sectionEl = contentRef.current.querySelector(`[data-section="${sectionName}"]`)
-          if (sectionEl) {
-            await addSectionToPDF(sectionEl)
-          }
+        // On cherche l'élément dans le DOM actuel
+        const sectionEl = contentRef.current.querySelector(`[data-section="${sectionName}"]`)
+        if (sectionEl) {
+          await addSectionToPDF(sectionEl)
+        }
       }
 
       pdf.save('solution-math-conquest.pdf')
@@ -160,6 +160,15 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
         </div>
         <div className="flex gap-3">
           <button
+            onClick={onRetryWithInstructions}
+            className="px-4 py-2.5 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-300 border border-orange-200 dark:border-orange-800 rounded-xl hover:bg-orange-100 dark:hover:bg-orange-900/40 transition-all text-sm font-semibold flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            {t('improveSolution') || 'Corriger / Directives'}
+          </button>
+          <button
             onClick={handleExportPDF}
             className="px-5 py-2.5 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border-2 border-gray-300 dark:border-gray-600 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-sm font-semibold flex items-center gap-2 shadow-md hover:shadow-lg"
           >
@@ -182,7 +191,7 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
 
       {/* Contenu exportable */}
       <div ref={contentRef} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 sm:p-8 border border-gray-100 dark:border-gray-700">
-        
+
         {/* Problème original */}
         <div data-section="problem" className="mb-8 pb-6 border-b border-gray-100 dark:border-gray-700">
           <h3 className="text-sm uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-3">
@@ -202,13 +211,13 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
               </span>
               {t('stepsTitle')}
             </h3>
-            
+
             <div className="relative border-l-2 border-blue-100 dark:border-blue-900/30 ml-3 space-y-8 pl-6 pb-2">
               {explanation.steps.map((step, index) => (
                 <div key={index} className="relative">
                   {/* Point sur la ligne temporelle */}
                   <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-white dark:bg-gray-800 border-2 border-blue-500 z-10"></div>
-                  
+
                   <div className="space-y-3">
                     <div className="flex items-baseline gap-3">
                       <h4 className="text-base font-semibold text-gray-800 dark:text-gray-200">
@@ -222,9 +231,9 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
 
                     {step.latex && (
                       <div className="my-3 bg-blue-50/50 dark:bg-blue-900/10 rounded-lg p-3 overflow-x-auto border border-blue-100 dark:border-blue-900/20">
-                         <div className="text-blue-900 dark:text-blue-100">
+                        <div className="text-blue-900 dark:text-blue-100">
                           <BlockMath math={fixLatexInText(step.latex)} />
-                         </div>
+                        </div>
                       </div>
                     )}
 
@@ -243,9 +252,9 @@ function SolutionDisplay({ problem, solution, onReset, onOpenChat }) {
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             {t('noSteps')}
             {explanation.raw_text && (
-               <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded text-left text-sm font-mono overflow-x-auto whitespace-pre-wrap">
-                 {explanation.raw_text}
-               </div>
+              <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900 rounded text-left text-sm font-mono overflow-x-auto whitespace-pre-wrap">
+                {explanation.raw_text}
+              </div>
             )}
             {explanation.type && (
               <span className="block mt-2">
